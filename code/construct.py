@@ -244,7 +244,6 @@ def wrap_construct_h(q, m, runs=1000, target_interval=None):
     def wrap_return(r):
         if r is not None:
             i = RealSet.closed_open(r[2][0], r[2][1] + 1)
-            print(i)
             if target_interval is None:
                 if m in i:
                     return r
@@ -253,16 +252,9 @@ def wrap_construct_h(q, m, runs=1000, target_interval=None):
                     return r
     if m < 6:
         return None
-    r = wrap_return(construct_h(q, m))
-    if r is not None:
-        return r
-    r = wrap_return(construct_h_recursive(q, m))
-    if r is not None:
-        return r
 
     for k in sorted(srange(-runs, runs + 1, 1), key=lambda elt: ZZ(elt).abs()):
         target = m + k
-        print(target)
         if target < 6:
             continue
         for shift in [0, 1, -1]:
@@ -270,4 +262,7 @@ def wrap_construct_h(q, m, runs=1000, target_interval=None):
                 r = wrap_return(construct_h(q, target, degree_shift=shift, adjust_ell=fixell))
                 if r is not None:
                     return r
+        r = wrap_return(construct_h_recursive(q, target))
+        if r is not None:
+            return r
 

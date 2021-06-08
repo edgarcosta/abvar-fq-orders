@@ -42,12 +42,12 @@ def deform(q, f, deformation):
         # we get a double root when we hit a local extrema
         fder = f.derivative()
         fder = fder // fder.gcd(fder.derivative())
-        # deal with degree one factors, as RIF and QQ don't go so well
-        for fac, e in fder.factor():
-            assert e == 1
-            if fac.degree() == 1:
-                issues = issues.union([RRR(-f(elt[0])) for elt in fac.roots(QQ)])
-                fder = fder // fac
+        ## deal with degree one factors, as RIF and QQ don't go so well
+        #for fac, e in fder.factor():
+        #    assert e == 1
+        #    if fac.degree() == 1:
+        #        issues = issues.union([RRR(-f(elt[0])) for elt in fac.roots(QQ)])
+        #        fder = fder // fac
         roots = [elt.real() for elt in fder.roots(CBF, multiplicities=False) if 0 in elt.imag()]
         assert len(roots) == fder.degree()
         issues = issues.union([-f(elt) for elt in roots])

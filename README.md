@@ -1,3 +1,10 @@
+
+
+The data 
+
+To see how to generate the data, see `code/section_9_check.py`.
+
+
 q | ceil(3 sqrt(q) log(q) - 1/2) | n_0 such that equation in Proposition 9.3 holds for n >= n_0 | First equation in Corollary 9.4 holds \\ \hline
 -------------------
 3 | 6 | 24 | 32
