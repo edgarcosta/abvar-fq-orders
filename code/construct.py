@@ -14,6 +14,7 @@ from sage.all import (
     srange,
     cached_function,
     prod,
+    ComplexBallField,
 )
 from utils import (
     hat,
@@ -36,7 +37,12 @@ def roots_away_from_D(q, h):
     hsqrfree = h // gcd(h, h.derivative())
     sqrtinv = RBF(1/sqrt(q))
     if all(elt.abs() > sqrtinv.mid() for elt in hsqrfree.roots(CDF, multiplicities=False)):
-        return all(elt.abs() > sqrtinv for elt in hsqrfree.roots(CBF, multiplicities=False))
+        try:
+            return all(elt.abs() > sqrtinv for elt in hsqrfree.roots(CBF, multiplicities=False))
+        except ValueError:
+            return all(elt.abs() > sqrtinv for elt in hsqrfree.roots(ComplexBallField(600), multiplicities=False))
+
+
     else:
         return False
 
@@ -89,7 +95,7 @@ def construct_h_recursive(q, m, a=None):
     if a is None:
         a = floor(sqrt(m))
     b = floor(m/a)
-    r = [wrap_construct_h(q, elt, runs=2) for elt in [a,b]]
+    r = [wrap_construct_h(q, elt, runs=10) for elt in [a,b]]
     if None in r:
         return None
     if any(elt[0][1] != 1 for elt in r):
@@ -167,7 +173,8 @@ def construct_h_deform(q, n, m, h0):
             center = q ** n * h0(1 / q) + sum(h0)
         else:
             gs = [hat(q, elt, n) for elt in [h, h0]]
-            if not any(elt.is_weil_polynomial() for elt in gs):
+            # disabled at the moment
+            if False and  not any(elt.is_weil_polynomial() for elt in gs):
                 # try use polynomial with the same initial coefficients
                 # this should become expensive about the time past the time the method kicks in
                 lead = [(i, 0) for i in h.list()[:-2]]
@@ -186,10 +193,14 @@ def construct_h_deform(q, n, m, h0):
         hcirclesqrfree = hcirclesqrfree // hcirclesqrfree.gcd(
             hcirclesqrfree.derivative()
         )
+        try:
+            roots = hcirclesqrfree.roots(CBF, multiplicities=False)
+        except ValueError:
+            roots = hcirclesqrfree.roots(ComplexBallField(600), multiplicities=False)
         mu = sorted(
             [
                 CBF(h(elt)).abs()
-                for elt in hcirclesqrfree.roots(CBF, multiplicities=False)
+                for elt in roots
                 if elt.abs().overlaps(sqrtqinv)
             ]
         )[0]
@@ -206,7 +217,7 @@ def construct_h_deform(q, n, m, h0):
         # return sum_{i=r}^{n} k^i
         return (a**(1 + n) - a**r)/(a - 1)
     for r in range(n):
-        if geometric_sum(1/sqrt(q), r) * fq2 < mu:
+        if geometric_sum(RBF(1/sqrt(q)), r) * fq2 < mu:
             break
     if r >= n - 1:
         # deforming just middle gives ~q**(n/2) range
@@ -226,13 +237,14 @@ def construct_h_deform(q, n, m, h0):
     return (out, rad, interval,)
 
 
-def wrap_construct_h(q, m, runs=100, target_interval=None):
+def wrap_construct_h(q, m, runs=1000, target_interval=None):
     # try various targets to construct the polynomial
     # especially useful for small m
     # returns None if every attempt failed
     def wrap_return(r):
         if r is not None:
             i = RealSet.closed_open(r[2][0], r[2][1] + 1)
+            print(i)
             if target_interval is None:
                 if m in i:
                     return r
@@ -250,6 +262,7 @@ def wrap_construct_h(q, m, runs=100, target_interval=None):
 
     for k in sorted(srange(-runs, runs + 1, 1), key=lambda elt: ZZ(elt).abs()):
         target = m + k
+        print(target)
         if target < 6:
             continue
         for shift in [0, 1, -1]:

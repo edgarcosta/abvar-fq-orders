@@ -42,9 +42,8 @@ def cover_interval(q, start, end, runs=1000):
     return coverage, res, time()-start_time
 
 
-startparam = {2: 3, 3: 6, 4: 16, 5: 29, 7: 50000, 8: 76000, 9: 22950, 11: 67880}
-#startparam = {2: 3, 3: 6, 4: 16, 5: 29, 7: 50000, 8: 40897792, 9: 22950, 11: 67880}
-def cover_interval_parallel(q, end, res=None, step=10**3, total_wall=0, coverage=None, nonordinary=[]):
+startparam = {2: 3, 3: 6, 4: 16, 5: 56, 7: 40206} # 8: 76000, 9: 22950, 11: 67880}
+def cover_interval_parallel(q, end, res=None, step=500, total_wall=0, coverage=None, nonordinary=[]):
     if res is None:
         if q not in startparam:
             raise NotImplementedError

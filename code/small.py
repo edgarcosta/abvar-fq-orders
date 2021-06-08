@@ -25,6 +25,7 @@ from sage.all import (
     prime_divisors,
     prod,
     save,
+    floor,
 )
 from sage.rings.polynomial.weil.weil_polynomials import WeilPolynomials
 from utils import (
@@ -91,17 +92,24 @@ def cover_small(q, end, n=None):
     start_time0 = start_time = time()
     res = seed_small(q, n)
     print('seed_small %.2f s' % (time() - start_time,))
+
     start_time = time()
     extend_multiplicatively(q, res, end)
     print('extend_multiplicatively %.2f s' % (time() - start_time,))
+
     start_time = time()
     start = hw(q, n + 1).get_interval(0).lower()
+    start_time = time()
     extend_by_neighbors(q, res, n, start, end, maxk=3)
-    resint, coverage, nonordinary = convert_into_intervals(q, res, n, end)
     print('extend_by_neighbors %.2f s' % (time() - start_time,))
-    walltime = start_time0 - time()
+
+    start_time = time()
+    resint, coverage, nonordinary, w = convert_into_intervals(q, res, n, end)
+    print('convert_into_intervals %.2f s (%.2f s)' % (time() - start_time, w))
+
+    walltime = start_time0 - time() + w
     out = (resint, coverage, nonordinary, n, walltime)
-    save(out, filename)
+    save(out, str(filename.as_posix()))
     return out
 
 
@@ -151,17 +159,6 @@ def extend_multiplicatively(q, res, cut):
 
 def extend_by_neighbors(q, res, minn, start, end, maxk=20):
     calls = set({})
-    def submit(k, jobs, executor):
-        for m in range(start, end):
-            if m not in res:
-                for ell in range(m-k, m+k+1):
-                    if ell in res:
-                        for halfg in res[ell]:
-                            # take the first not yet tried
-                            if len(halfg) >= minn + 1 and halfg[:-2] not in calls:
-                                jobs[executor.submit(weil_poly_lead, q, halfg[:-2])] = halfg[:-2]
-                                calls.add(halfg[:-2])
-                                break
     assert maxk > 1
     with ProcessPoolExecutor() as executor:
         for k in range(1, maxk):
@@ -175,6 +172,7 @@ def extend_by_neighbors(q, res, minn, start, end, maxk=20):
                                 if len(halfg) >= minn + 1 and halfg[:-2] not in calls:
                                     jobs[executor.submit(weil_poly_lead, q, halfg[:-2])] = halfg[:-2]
                                     calls.add(halfg[:-2])
+                                    break
             if not jobs:
                 break
             for job in as_completed(jobs):
@@ -182,13 +180,13 @@ def extend_by_neighbors(q, res, minn, start, end, maxk=20):
                     res[m].update(gs)
 
 
-
-def convert_into_intervals(q, res, n, cut):
+def convert_into_intervals_core(q, res, start, end):
+    start_time = time()
     p = prime_divisors(q)[0]
-    resint = {(1,2):(1, 0, ((1,),), 0)}
-    coverage = RealSet.closed_open(1,2)
-    ordinarycoverage = RealSet.closed_open(1,2)
-    for m in reversed(range(2, cut)):
+    coverage = RealSet()
+    ordinarycoverage = RealSet()
+    resint = {}
+    for m in reversed(range(start, end)):
         if m in coverage and m in ordinarycoverage:
             continue
         if m in res:
@@ -203,7 +201,28 @@ def convert_into_intervals(q, res, n, cut):
                     if h[-1] % p != 0:
                         ordinarycoverage += RealSet.closed_open(m, m+1)
                         break
-    return resint, coverage, [m for m in range(2, cut) if m not in ordinarycoverage]
+    return resint, coverage, ordinarycoverage, time() - start_time
+
+
+def convert_into_intervals(q, res, n, end):
+    resint = {(1,2):(1, 0, ((1,),), 0)}
+    coverage = RealSet.closed_open(1,2)
+    ordinarycoverage = RealSet.closed_open(1,2)
+    walltime = 0
+    start_time = time()
+    with ProcessPoolExecutor() as executor:
+        jobs = {}
+        step = max(100, floor(end/cpu_count()))
+        for start in range(2, end, step):
+            jobs[executor.submit(convert_into_intervals_core, q, res, start, min(start+step, end))] = (start, start + step)
+        for job in as_completed(jobs):
+            r, c, o, w = job.result()
+            resint.update(r)
+            coverage += c
+            ordinarycoverage += o
+            walltime += w
+    walltime += time() - start_time
+    return resint, coverage, [m for m in range(2, end) if m not in ordinarycoverage], walltime
 #    for m in range(2, cut):
 #        if m not in coverage:
 #            c = wrap_construct_h(q, m, runs=1000, target_interval=None)

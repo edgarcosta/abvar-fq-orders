@@ -3,7 +3,8 @@ from collections import defaultdict
 from sage.all import (
     ZZ,
     PolynomialRing,
-    RDF,
+    CBF,
+    RBF,
     RealIntervalField,
     QQ,
     sqrt,
@@ -30,7 +31,7 @@ def deform(q, f, deformation):
     if not f.is_squarefree():
         return 0, 0
     deformation = R(deformation)
-    RRR = RDF if deformation == 1 else RealIntervalField(600)
+    RRR = RBF if deformation == 1 else RealIntervalField(600)
 
     issues = set()
     for sign in [1, -1]:
@@ -47,15 +48,18 @@ def deform(q, f, deformation):
             if fac.degree() == 1:
                 issues = issues.union([RRR(-f(elt[0])) for elt in fac.roots(QQ)])
                 fder = fder // fac
-        roots = fder.roots(RRR)
+        roots = [elt.real() for elt in fder.roots(CBF, multiplicities=False) if 0 in elt.imag()]
         assert len(roots) == fder.degree()
-        issues = issues.union([-f(elt) for elt, _ in fder.roots(RRR)])
-        low = sorted(elt for elt in issues if elt <= 0)[-1].ceil()
-        upper = sorted(elt for elt in issues if elt >= 0)[0].floor()
+        issues = issues.union([-f(elt) for elt in roots])
+        if any(0 in elt for elt in issues): # not running any risks
+            return (0, 0)
+        low = sorted(elt.upper().ceil() for elt in issues if elt < 0)[-1]
+        upper = sorted(elt.lower().floor() for elt in issues if elt > 0)[0]
         # deformation space is connected
         assert is_real_weil(q, f + low) and is_real_weil(q, f + upper)
         return low, upper
     else:
+        # this code is not longer used
         S = PolynomialRing(R, "yt")
         # all the time is spent here!!!
         delta = (f(S.gen()) + R.gen() * deformation(S.gen())).discriminant()
