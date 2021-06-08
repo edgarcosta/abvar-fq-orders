@@ -137,28 +137,28 @@ def write(filename, q, coverage, res, w, nonordinary, nsmall, smallcut):
 # Each line has the following format:
 # a:b:c:r:pol:mu_ord_upper
 # where:
-# - a, b, c, r are integers representing the closed
-# - pol, is a list of lists of integers, each list represents a Weil polynomial of degree 2n given by their last n coefficients,
-# - mu_ord is a real number
+# - a, b, c, r are integers
+# - pol is a list of lists of integers, each list represents a Weil polynomial of degree 2n given by their last n coefficients,
+# - mu_ord_upper is a real number
 #
 # For each (monic) Weil polynomial h(x) represented by pol we have h(1) = c.
 # There are two cases:
 #
 # If r = 1, then the polynomials g(x) = h(x) + (t-c)*x^n with t an integer in [a, b),
-# are also a Weil polynomials, and g(1) = t.
+# are also Weil polynomials, and g(1) = t.
 # Furthermore, the length of pol is at most two, and if two then the middle coefficients
-# differ modulo p, and thus every number in [a, b) maybe be represented by an order of 
+# differ modulo p, and thus every number in [a, b) may be represented by an order of
 # an ordinary abelian variety.
-# In this case, mu_ord_upper = 0, and doesn't play a role.
+# In the case r = 1 we put mu_ord_upper = 0 and mu_ord_upper doesn't play a role.
 #
 # If r > 1, then pol has length one, and thus only represents one polynomial h(x).
-# Write g(x) = h(x) + q*x^(n-1) + (q + 1)*x^n + x^(n+1).
+# Write g(x) = h(x) + q*x^(n-1) - (q + 1)*x^n + x^(n+1).
 # This is also a Weil polynomial.
 # Consider S_h (resp. S_g) the set of integral polynomials obtained by integrally modifying
-# the coefficients x^n, ..., x^(n + (r-1)) by floor(q/2) of h(x) (resp. g(x)), and the lower
-# coefficients accordingly to keep the q-symmetry.
-# One can then realize every integer in [a, b) as f(1) with f in S_h (resp. S_g).
-# mu_ord_upper is an upper bound for mu_ord as defined in Section 9
+# the coefficients x^n, ..., x^(n + (r-1)) by at most floor(q/2) of h(x) (resp. g(x)), and
+# the lower coefficients accordingly to keep the q-symmetry.
+# One can then realize every integer in [a, b) as f(1) with f in S_h and as f(1) with f in S_g.
+# mu_ord_upper is an upper bound for mu_ord as defined in Section 9.
 #
 """)
         for a, b in sorted(res):
