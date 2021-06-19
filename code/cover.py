@@ -158,7 +158,7 @@ def write(filename, q, coverage, res, w, nonordinary, nsmall, smallcut):
 # the coefficients x^n, ..., x^(n + (r-1)) by at most floor(q/2) of h(x) (resp. g(x)), and
 # the lower coefficients accordingly to keep the q-symmetry.
 # One can then realize every integer in [a, b) as f(1) with f in S_h and as f(1) with f in S_g.
-# mu_ord_upper is an upper bound for mu_ord as defined in Section 9.
+# mu_ord_upper is a lower bound for mu_ord as defined in Section 9.
 #
 """)
         for a, b in sorted(res):

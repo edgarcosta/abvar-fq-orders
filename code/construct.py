@@ -232,7 +232,7 @@ def construct_h_deform(q, n, m, h0):
         assert hhat.is_weil_polynomial()
     hhat = hat(q, h, n)
     assert center == hhat(1)
-    out = (center, n + 1 - r, (poly_to_tuple(hhat),), mu.upper())
+    out = (center, n + 1 - r, (poly_to_tuple(hhat),), mu.lower())
     interval = (center - rad, center + rad)
     return (out, rad, interval,)
 
