@@ -1,26 +1,93 @@
 from collections import defaultdict
 
 from sage.all import (
-    ZZ,
-    PolynomialRing,
     CBF,
+    PolynomialRing,
+    QQ,
     RBF,
     RealIntervalField,
-    QQ,
+    ZZ,
+    prime_divisors,
     sqrt,
 )
 
 from utils import (
-    make_weil,
     trace_polynomial,
     is_real_weil,
-    hondatate,
 )
 
 from construct import (
     NotWeil,
 )
 
+def deform_middle_ordinary_squarefree(q, S):
+    r"""
+    Let I_h = {h(1) + c: h(x) + c*x^(degree(h)/2) is a square free Weil polynonial}.
+
+    Given a non-emtpy list S of q-symmetric polynomials such that h(1) = m for h in S,
+    we return an interval [l, u] and two polynomials [h0, h1] < S such that:
+    - h0, h1 are in S, square free Weil polynomials
+    - [l, u] = I_h0 intersection I_h1
+    - middle coefficient of h0 and h1 differ modulo p
+    where h0 and h1 were picked such a way that minimizes l.
+    If there is no such pair, we return None.
+    """
+    if len(S) < 2:
+        return None
+
+    # get the first polynomial of S
+    h = S[0]
+    m = h(1)
+    assert all(elt.is_squarefree() for elt in S)
+    assert all(elt.is_weil_polynomial() for elt in S)
+    assert all(elt(1) == m for elt in S)
+
+    x = h.parent().gen()
+    def compute_interval(g):
+        assert g(1) == m
+        # we are not interested in deforming these polynomials
+        assert g.is_squarefree()
+        rg = trace_polynomial(q, g)
+        # we only deform Weil polynomials
+        assert is_real_weil(q, rg)
+        n = g.degree()//2
+        l, u = deform(q, rg, 1)
+        gl = g + l*x**n
+        if not gl.is_squarefree():
+            l += 1
+            gl = g + l*x**n
+            assert gl.is_squarefree()
+
+        gu = g + u*x**n
+        if not gu.is_squarefree():
+            u -= 1
+            gu = g + u*x**n
+            assert gu.is_squarefree()
+        assert gu.is_weil_polynomial()
+        assert gl.is_weil_polynomial()
+        return m + l, m + u
+
+    IS = [(elt, compute_interval(elt)) for elt in S]
+    modpclasses = defaultdict(list) # b -> [(Ig, g) : g^[n] % p = b}
+    p = prime_divisors(q)[0]
+    for (g, Ig) in IS:
+        modpclasses[g[g.degree()//2] % p].append((Ig, g))
+
+    modp_left = []
+    for b, elt in modpclasses.items():
+        elt.sort() # the values will be sorted by the left most end point
+        modp_left.append(elt[0])
+    modp_left.sort()
+    if len(modp_left) <= 1:
+        return None
+
+    (Ih0, h0), (Ih1, h1) = modp_left[:2]
+    l = max(Ih0[0], Ih1[0])
+    u = min(Ih0[1], Ih1[1])
+    assert all((h + k*x**(h.degree()//2)).is_weil_polynomial() for h in [h0, h1] for k in [l-m, u-m])
+    assert all((h + k*x**(h.degree()//2)).is_squarefree() for h in [h0, h1] for k in [l-m, u-m])
+    assert (h0[h0.degree()//2] - h1[h1.degree()//2]) % p != 0
+    return (l, u), [h0, h1]
 
 
 def deform(q, f, deformation):
@@ -74,61 +141,3 @@ def deform(q, f, deformation):
         low = sorted(elt for elt in issues if elt <= 0)[-1].ceil().is_int()[1]
         upper = sorted(elt for elt in issues if elt >= 0)[0].floor().is_int()[1]
         return low, upper
-
-
-def deform_batch(p, q, m, gs, rev=False):
-    R = PolynomialRing(ZZ, "x")
-
-    def deform1_tuple(q, m, halfg):
-        g = make_weil(q, halfg)
-        assert g(1) == m
-        l, u = deform(q, trace_polynomial(q, g), 1)
-        return (l + m, u + m + 1), m, halfg
-
-    gs = [deform1_tuple(q, m, g) for g in gs]
-    gs.sort()
-    if rev:
-        gs.reverse()
-    intervals = None
-    for interval, _, halfg in gs:
-        if intervals:
-            break
-        if len(halfg) <= 2:
-            continue # we can't try to make it ordinary
-        for s in [-1, 1]:
-            halfg0 = list(halfg)
-            halfg0[-1] += s * (q + 1)
-            halfg0[-2] -= s
-            halfg0 = tuple(halfg0)
-            try:
-                interval0, _, _ = deform1_tuple(q, m, halfg0)
-                intervals = (interval, interval0)
-                halfgs = (halfg, halfg0)
-            except NotWeil:
-                continue
-    else:
-        modp = defaultdict(list)
-        for interval, _, halfg in gs:
-            if len(modp) >= 2:
-                break
-            modp[halfg[-1] % p].append([interval, halfg])
-        else:
-            (l, u), _, halfg = gs[0]
-            g = make_weil(q, halfg).reverse()
-            n = g.degree() // 2
-            for k in range(l - m, u - m):
-                g0 = g + k * R.gen() ** n
-                if not hondatate(g0, p, q):
-                    if k < 0:
-                        l = k + 1 + m
-                    else:
-                        u = k + m
-                        break
-            return (l, u), (m, 1, (halfg,), 0)
-        vs = [elt[0] for elt in modp.values()]
-        assert len(vs) == 2
-        intervals = [elt[0] for elt in vs]
-        halfgs = tuple(elt[1] for elt in vs)
-    l = max(elt[0] for elt in intervals)
-    u = min(elt[1] for elt in intervals)
-    return (l, u), (m, 1, halfgs, 0)

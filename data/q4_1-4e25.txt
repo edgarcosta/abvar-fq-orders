@@ -1,9 +1,9 @@
 # q = 4
-# Integers covered = [2, 1169880371953668)
+# Integers covered = [1, 1169880371953668)
 # 1169880371953668 ~ 4^25.03
 # exhaustive for g <= 3
 # orders potentially not realizable with ordinary AV = [3]
-# total wall time = 107.98 seconds
+# total wall time = 111.81 seconds
 #
 # Each line has the following format:
 # a:b:c:pol:r:mu_ord_lower:construction
@@ -44,6 +44,7 @@
 # If the length of poly is 2, then condition (a) from 'logexp' holds and the polynomials were generated from exhaustive search in low dimension.
 # If the length of poly is 1, ordinariness or squarefreeness might fail.
 #
+1:2:1:[[1]]:0:0:small
 2:3:2:[[1, -7, 20]]:0:0:small
 3:4:3:[[1, -10, 44, -112]]:0:0:small
 4:5:4:[[1, -6, 17]]:0:0:small
