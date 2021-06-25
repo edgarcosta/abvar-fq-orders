@@ -11,7 +11,6 @@ except NameError:
 # and to make use of parallelism one needs to enable OpenMP support
 # see the first lines of weil_polynomials.pyx of the root-unitary package
 root_unitary_directory = pathlib.PurePath(current_directory, '..', 'root-unitary/')
-root_unitary_directory = pathlib.PurePath('/home/edgarcosta/', 'root-unitary/')
 os.environ["SAGE_NUM_THREADS"] = os.environ["OMP_NUM_THREADS"] = str(cpu_count())
 
 from sage.all import (
