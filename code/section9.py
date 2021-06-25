@@ -7,8 +7,6 @@ def section_9_check(q):
         7: (0, 26),
         8: (18, 26),
         9: (20, 28),
-        11: (24, 30),
-        13: (28, 34),
     }
     b, e = params[q]
     filename = f'../data/q{q}_{q}e{b}-{q}e{e}.txt'
